@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+         <!-- stuff that will only be evaluated if in simulation mode -->
+	<remap from="/gripper/cmd" to="/vector/right_gripper/cmd"/>
+	<remap from="/gripper/stat" to="/vector/right_gripper/stat"/>
+	<node name="gripper_actions" pkg="robotiq_85_gripper_actions" type="gripper_actions" respawn="false" output="screen" />			
+	
+
+</launch>
