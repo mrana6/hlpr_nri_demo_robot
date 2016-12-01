@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>hlpr_nri_demo</name>
+  <name>hlpr_nri_demo_robot</name>
   <version>0.0.0</version>
-  <description>The hlpr_nri_demo package</description>
+  <description>The hlpr_nri_demo_robot package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
