@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(hlpr_nri_demo)
+project(hlpr_nri_demo_robot)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
