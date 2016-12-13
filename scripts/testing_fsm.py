@@ -2,12 +2,20 @@
 
 import smach
 from smach_ros import SimpleActionState
+import roslib
+import rospy
+import sys
+import time
 
 from modules.pick_place_modules import *
 from modules.navigation_module import *
 from navigation_states import *
 import rail_manipulation_msgs.msg
 import actionlib
+import hlpr_kinesthetic_interaction.srv
+import hlpr_speech_msgs.srv
+
+from hlpr_speech_recognition.speech_listener import SpeechListener
 
 
 class ClearSceneState(smach.State):
@@ -184,11 +192,11 @@ class PickUpCentroidState(smach.State):
         rospy.loginfo('Executing Centroid Pickup')
         self.receivedObject = userdata.objectIn
         self.receivedCentroid = self.receivedObject.centroid
-        self.centroidGraspPose.header.frame_id = "map"
+        self.centroidGraspPose.header.frame_id = "base_link"  #TODO: Change back to map
 
-        self.centroidGraspPose.pose.position.x = self.receivedCentroid.x + 0.1
+        self.centroidGraspPose.pose.position.x = self.receivedCentroid.x
         self.centroidGraspPose.pose.position.y = self.receivedCentroid.y
-        self.centroidGraspPose.pose.position.z = self.receivedCentroid.z
+        self.centroidGraspPose.pose.position.z = self.receivedCentroid.z + 0.1
 
         self.centroidGraspPose.pose.orientation.x = 0.70711
         self.centroidGraspPose.pose.orientation.y = 0.0
@@ -250,6 +258,46 @@ class VerifyGraspState(smach.State):
         return self.status
 
 
+class DemonstrateGraspState(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded','failed', 'demoing'])
+        self.counter = 0
+        self.status = 'failed'
+        self.service_topic = rospy.get_param(SpeechListener.SERVICE_TOPIC_PARAM)
+        print self.service_topic
+        rospy.wait_for_service('/kinesthetic_interaction')
+        rospy.wait_for_service(self.service_topic)
+        self.kinestheticInteractService = rospy.ServiceProxy('/kinesthetic_interaction',
+                                                             hlpr_kinesthetic_interaction.srv.KinestheticInteract)
+        self.speechListenerService = rospy.ServiceProxy(self.service_topic,
+                                                         hlpr_speech_msgs.srv.SpeechService)
+
+        self.kinestheticResponse = self.kinestheticInteractService(True)
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing Demonstration State')
+        self.counter += 1
+
+        if self.kinestheticResponse is not None:
+            if self.kinestheticResponse.success is True:
+                self.status = 'demoing'
+                rospy.sleep(0.5)
+                try:
+                    speechResponse = self.speechListenerService(True)
+                except rospy.ServiceException:
+                    speechResponse = None
+
+                if speechResponse is not None:
+                    rospy.loginfo('I heard: %s', str(speechResponse.speech_cmd))
+                    if speechResponse.speech_cmd == 'END_GC':
+                            rospy.loginfo('Ending Demonstration')
+                            self.status = 'succeeded'
+        else:
+            rospy.loginfo('Failed to turn on kinesthetic interaction')
+
+        return self.status
+
+
 
 
 
@@ -266,7 +314,7 @@ if __name__ == '__main__':
 
     # Set FSM user data
     sm.userdata.startCommand = True
-    sm.userdata.objectName = "CUBE"
+    sm.userdata.objectName = "TUNA"
     sm.userdata.grasps = None
     sm.userdata.recognizedObject = None
     sm.userdata.transformedObject = None
@@ -281,42 +329,53 @@ if __name__ == '__main__':
                                transitions={'succeeded':'TuckArm',
                                             'failed':'end'})
 
-        smach.StateMachine.add('TuckArm', MoveArmState('Retract'),
-                               transitions={'succeeded':'end',
+        smach.StateMachine.add('TuckArm', MoveArmState('upperTuck'),
+                               transitions={'succeeded':'SearchObject',
                                             'failed':'end'})
 
-        smach.StateMachine.add('GoToTable', GoToPointState(True),
-                               transitions={'succeeded': 'SearchObject',
-                                            'failed': 'end'},
-                               remapping={'navGoalIn': 'navGoalStart'})
-
+        # smach.StateMachine.add('GoToTable', GoToPointState(True),
+        #                        transitions={'succeeded': 'SearchObject',
+        #                                     'failed': 'end'},
+        #                        remapping={'navGoalIn': 'navGoalStart'})
+        #
         smach.StateMachine.add('SearchObject', SearchObjectState(),
-                               transitions={'succeeded': 'AdjustBase',
+                               transitions={'succeeded': 'PickObject',
                                             'failed': 'end'},
                                remapping={'startCommandIn': 'startCommand',
                                           'objectNameIn': 'objectName',
                                           'objectOut': 'recognizedObject'})
+        #
+        # # smach.StateMachine.add('ReadyArm', MoveArmState('Ready'),
+        # #                        transitions={'succeeded': 'AdjustBase',
+        # #                                     'failed': 'end'})
+        #
+        # smach.StateMachine.add('AdjustBase', AdjustBaseState(),
+        #                        transitions={'succeeded': 'ClearOctomap',
+        #                                     'failed': 'end'},
+        #                        remapping={'objectIn':'recognizedObject',
+        #                                   'distIn':'distBaseToObject',
+        #                                   'objectOut':'transformedObject'})
+        #
+        # smach.StateMachine.add('ClearOctomap', ClearOctomapState(),
+        #                        transitions={'succeeded':'PickObject',
+        #                                     'failed':'end'})
 
-        # smach.StateMachine.add('ReadyArm', MoveArmState('Ready'),
-        #                        transitions={'succeeded': 'AdjustBase',
-        #                                     'failed': 'end'})
 
-        smach.StateMachine.add('AdjustBase', AdjustBaseState(),
-                               transitions={'succeeded': 'ClearOctomap',
+        smach.StateMachine.add('PickObject', PickObjectState(),
+                               transitions={'succeeded': 'VerifyGrasp',
                                             'failed': 'end'},
-                               remapping={'objectIn':'recognizedObject',
-                                          'distIn':'distBaseToObject',
-                                          'objectOut':'transformedObject'})
+                               remapping={'objectIn': 'recognizedObject'})
 
-        smach.StateMachine.add('ClearOctomap', ClearOctomapState(),
-                               transitions={'succeeded':'PickObject',
-                                            'failed':'end'})
-
-
-        smach.StateMachine.add('PickObject', PickUpCentroidState(),
+        smach.StateMachine.add('VerifyGrasp', VerifyGraspState(),
                                transitions={'succeeded': 'end',
-                                            'failed': 'end'},
-                               remapping={'objectIn': 'transformedObject'})
+                                            'failed': 'DemonstrateGrasp'})
+
+        smach.StateMachine.add('DemonstrateGrasp', DemonstrateGraspState(),
+                               transitions={'succeeded': 'end',
+                                            'failed': 'end',
+                                            'demoing':'DemonstrateGrasp'})
+
+
 
         # smach.StateMachine.add('GoToPerson', GoToPointState(True),
         #                        transitions={'succeeded': 'HandOffArm',

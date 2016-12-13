@@ -83,7 +83,7 @@ class ObjectPicker:
             pickupGoal = rail_manipulation_msgs.msg.PickupGoal(pose=self.receivedGrasps[0].grasp_pose,
                                                                 lift=True,
                                                                 verify=False,
-                                                                attachObject=False)
+                                                                attachObject=True)
             pickupClient.send_goal(pickupGoal)
             pickupClient.wait_for_result(rospy.Duration.from_sec(30.0))
             pickupResult = pickupClient.get_result()
@@ -116,8 +116,9 @@ class ArmMover:
         self.handOffJointPose = [-1.60, 2.60, 1.20, -3.14, 1.50, 1.20]
         self.readyJointPose = [-1.5708, 1.5708, 1.5708, 0.5, 0.5, 1.0]
         #self.readyJointPose = [-1.70, 1.8, 1.3, 0.2, 0.9, 1.3]
-        self.retractJointPose = [-1.70, 2.00, 1.00, -2.20, 2.00, 0.90]
-        self.upperTuckPose = [-1.90, 1.50, 0.50, -2.00, 3.0, 0.72]
+        self.retractJointPose = [-1.70, 2.00, 1.00, -2.30, 2.00, 0.90]
+        self.upperTuckPose = [-1.4735025300588136, 1.0, 0.8,
+                              -2.084300123965141, 1.4451027133522634, 1.3150955778920286]
 
         self.motionDict = {'Tuck':self.tuckJointPose, 'HandOff':self.handOffJointPose,
                            'Ready':self.readyJointPose, 'Retract':self.readyJointPose,
