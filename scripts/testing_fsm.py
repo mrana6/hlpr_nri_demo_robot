@@ -161,10 +161,17 @@ class PickObjectState(smach.State):
         self.counter = 0
         self.status = 'failed'
         self.objectPicker = ObjectPicker()
+        self.receivedGrasps = None
 
     def execute(self, userdata):
         rospy.loginfo('Executing state PickObject')
-        self.objectPicker.receivedGrasps = userdata.objectIn.grasps
+        self.receivedGrasps = userdata.objectIn.grasps
+
+        if self.receivedGrasps is not None:
+            rospy.loginfo('Number of Grasps Received: %d' % len(self.receivedGrasps))
+            rospy.loginfo('Executing grasp number: %d', self.counter)
+            self.objectPicker.receivedGrasp = self.receivedGrasps[self.counter]
+
         self.counter += 1
         self.objectPicker.executePickUp()
 
@@ -368,7 +375,7 @@ if __name__ == '__main__':
 
         smach.StateMachine.add('VerifyGrasp', VerifyGraspState(),
                                transitions={'succeeded': 'end',
-                                            'failed': 'DemonstrateGrasp'})
+                                            'failed': 'PickObjectState'})
 
         smach.StateMachine.add('DemonstrateGrasp', DemonstrateGraspState(),
                                transitions={'succeeded': 'end',

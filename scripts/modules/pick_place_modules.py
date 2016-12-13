@@ -68,33 +68,31 @@ class ObjectSearcher:
 
 
 class ObjectPicker:
-    def __init__(self, graspsIn=None):
-        self.receivedGrasps = graspsIn
+    def __init__(self, graspIn=None):
+        self.receivedGrasp = graspIn
         self.motionPlanningSuccess = False
         self.pickUpSuccess = False
+        self.pickupClient = actionlib.SimpleActionClient('hlpr_manipulation/common_actions/pickup',
+                                                         rail_manipulation_msgs.msg.PickupAction)
+        self.pickupClient.wait_for_server()
 
     def executePickUp(self):
-        if self.receivedGrasps is not None:
-            rospy.loginfo('Number of Grasps Received: %d' % len(self.receivedGrasps))
-            rospy.loginfo('Choosing the first Grasp')
-            pickupClient = actionlib.SimpleActionClient('hlpr_manipulation/common_actions/pickup',
-                                                         rail_manipulation_msgs.msg.PickupAction)
-            pickupClient.wait_for_server()
-            pickupGoal = rail_manipulation_msgs.msg.PickupGoal(pose=self.receivedGrasps[0].grasp_pose,
-                                                                lift=True,
-                                                                verify=False,
-                                                                attachObject=True)
-            pickupClient.send_goal(pickupGoal)
-            pickupClient.wait_for_result(rospy.Duration.from_sec(30.0))
-            pickupResult = pickupClient.get_result()
+        if self.receivedGrasp is not None:
+            pickupGoal = rail_manipulation_msgs.msg.PickupGoal(pose=self.receivedGrasp.grasp_pose,
+                                                               lift=True,
+                                                               verify=False,
+                                                               attachObject=True)
+            self.pickupClient.send_goal(pickupGoal)
+            self.pickupClient.wait_for_result(rospy.Duration.from_sec(30.0))
+            pickupResult = self.pickupClient.get_result()
             if pickupResult is not None:
                 if not pickupResult.executionSuccess:
                     rospy.loginfo('Motion Planning Failed')
                 else:
                     rospy.loginfo('Motion Planning Succeeded')
                     self.motionPlanningSuccess = True
-                    pickupClient.wait_for_result(rospy.Duration.from_sec(20.0))
-                    pickupResult = pickupClient.get_result()
+                    self.pickupClient.wait_for_result(rospy.Duration.from_sec(20.0))
+                    pickupResult = self.pickupClient.get_result()
                     if not pickupResult.success:
                         rospy.loginfo('Pick Up Failed')
                     else:
@@ -102,6 +100,8 @@ class ObjectPicker:
                         self.pickUpSuccess = True
             else:
                 rospy.loginfo('Timed Out - No pickup result received')
+        else:
+            rospy.loginfo('Grasp not received')
 
 
 class ArmMover:
