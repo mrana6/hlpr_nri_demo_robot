@@ -342,37 +342,43 @@ if __name__ == '__main__':
                                             'failed':'end'})
 
         smach.StateMachine.add('TuckArm', MoveArmState('upperTuck'),
+                               transitions={'succeeded':'GoToTable',
+                                            'failed':'end'})
+
+        smach.StateMachine.add('GoToTable', GoToPointState(True),
+                               transitions={'succeeded': 'ClearOctomap',
+                                            'failed': 'end'},
+                               remapping={'navGoalIn': 'navGoalStart'})
+
+
+        smach.StateMachine.add('ClearOctomap', ClearOctomapState(),
                                transitions={'succeeded':'SearchObject',
                                             'failed':'end'})
 
-        # smach.StateMachine.add('GoToTable', GoToPointState(True),
-        #                        transitions={'succeeded': 'SearchObject',
-        #                                     'failed': 'end'},
-        #                        remapping={'navGoalIn': 'navGoalStart'})
-        #
         smach.StateMachine.add('SearchObject', SearchObjectState(),
                                transitions={'succeeded': 'PickObject',
                                             'failed': 'end'},
                                remapping={'startCommandIn': 'startCommand',
                                           'objectNameIn': 'objectName',
                                           'objectOut': 'recognizedObject'})
-        #
-        # # smach.StateMachine.add('ReadyArm', MoveArmState('Ready'),
-        # #                        transitions={'succeeded': 'AdjustBase',
-        # #                                     'failed': 'end'})
-        #
-        # smach.StateMachine.add('AdjustBase', AdjustBaseState(),
-        #                        transitions={'succeeded': 'ClearOctomap',
-        #                                     'failed': 'end'},
-        #                        remapping={'objectIn':'recognizedObject',
-        #                                   'distIn':'distBaseToObject',
-        #                                   'objectOut':'transformedObject'})
-        #
-        # smach.StateMachine.add('ClearOctomap', ClearOctomapState(),
-        #                        transitions={'succeeded':'PickObject',
-        #                                     'failed':'end'})
 
 
+        # # # smach.StateMachine.add('ReadyArm', MoveArmState('Ready'),
+        # # #                        transitions={'succeeded': 'AdjustBase',
+        # # #                                     'failed': 'end'})
+        # #
+        # # smach.StateMachine.add('AdjustBase', AdjustBaseState(),
+        # #                        transitions={'succeeded': 'ClearOctomap',
+        # #                                     'failed': 'end'},
+        # #                        remapping={'objectIn':'recognizedObject',
+        # #                                   'distIn':'distBaseToObject',
+        # #                                   'objectOut':'transformedObject'})
+        # #
+        # # smach.StateMachine.add('ClearOctomap', ClearOctomapState(),
+        # #                        transitions={'succeeded':'PickObject',
+        # #                                     'failed':'end'})
+        #
+        #
         smach.StateMachine.add('PickObject', PickObjectState(),
                                transitions={'succeeded': 'VerifyGrasp',
                                             'failed': 'end',
@@ -380,7 +386,7 @@ if __name__ == '__main__':
                                remapping={'objectIn': 'recognizedObject'})
 
         smach.StateMachine.add('VerifyGrasp', VerifyGraspState(),
-                               transitions={'succeeded': 'end',
+                               transitions={'succeeded': 'GoToPerson',
                                             'failed': 'PickObject'})
 
         smach.StateMachine.add('DemonstrateGrasp', DemonstrateGraspState(),
@@ -388,16 +394,19 @@ if __name__ == '__main__':
                                             'failed': 'end',
                                             'demoing':'DemonstrateGrasp'})
 
+        smach.StateMachine.add('GoToPerson', GoToPointState(True),
+                               transitions={'succeeded': 'RetractArm',
+                                            'failed': 'end'},
+                               remapping={'navGoalIn': 'navGoalFinal'})
 
+        smach.StateMachine.add('RetractArm', MoveArmState('Retract'),
+                               transitions={'succeeded': 'HandOffArm',
+                                            'failed': 'end'})
 
-        # smach.StateMachine.add('GoToPerson', GoToPointState(True),
-        #                        transitions={'succeeded': 'HandOffArm',
-        #                                     'failed': 'end'},
-        #                        remapping={'navGoalIn': 'navGoalFinal'})
-        #
-        # smach.StateMachine.add('HandOffArm', MoveArmState('HandOff'),
-        #                        transitions={'succeeded': 'end',
-        #                                     'failed': 'end'})
+        smach.StateMachine.add('HandOffArm', MoveArmState('HandOff'),
+                               transitions={'succeeded': 'end',
+                                            'failed': 'end'})
+
 
 
     # Execute SMACH plan

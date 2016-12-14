@@ -5,13 +5,15 @@
     
     <include file="$(find rail_recognition)/launch/object_recognition_listener.launch"/>
 
-    <node name="moveit_wrapper" pkg="hlpr_manipulation_actions" type="hlpr_moveit_wrapper" respawn="false" output="screen" />
+    <include file="$(find hlpr_nri_demo_robot)/launch/gripper_actions_launcher.launch" />
+
+    <node name="hlpr_moveit_wrapper" pkg="hlpr_manipulation_actions" type="hlpr_moveit_wrapper" respawn="false" output="screen" />
 
     <node name="primitive_actions" pkg="hlpr_manipulation_actions" type="primitive_actions" respawn="false" output="screen" />
 
     <node name="common_actions" pkg="hlpr_manipulation_actions" type="common_actions" respawn="false" output="screen" />
 
-    <node name="gripper_actions" pkg="robotiq_85_gripper_actions" type="gripper_actions" respawn="false" output="screen" />
+
        
 
 </launch>
