@@ -255,6 +255,7 @@ class VerifyGraspState(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing Verify Grasp')
+        rospy.sleep(0.50)
         self.counter += 1
         self.verifyClient.wait_for_server()
         verifyGoal = rail_manipulation_msgs.msg.VerifyGraspGoal()

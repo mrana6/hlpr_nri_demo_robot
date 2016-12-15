@@ -37,8 +37,8 @@ class GoToPointState(smach.State):
         # The robot navigates to this pose to fetch the object
         self.table = Pose()
 
-        self.table.position.x = -0.0683037543297 # 1.8
-        self.table.position.y = -0.104  # 1.3
+        self.table.position.x = 1.05#-0.0683037543297 # 1.8
+        self.table.position.y = -1.06307677269#-0.15  # 1.3
         self.table.position.z = 0
 
         self.table.orientation.x = 0.000
@@ -49,8 +49,8 @@ class GoToPointState(smach.State):
         # Assign person pose wrt world frame
         # The robot navigates to this pose to release the object
         self.other = Pose()
-        self.other.position.x = -1.28926753998  # 2.41
-        self.other.position.y = 0.904734373093  # 4.11
+        self.other.position.x = -0.450#-1.28926753998  # 2.41
+        self.other.position.y = -0.298#0.904734373093  # 4.11
         self.other.position.z = 0.0
 
         self.other.orientation.x = 0.000
