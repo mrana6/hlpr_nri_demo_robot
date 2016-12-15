@@ -54,6 +54,7 @@ class ClearSceneState(smach.State):
 
         rospy.sleep(2.0)  # To let the octomap regenerate
         return self.status
+    
 
 class ClearOctomapState(smach.State):
     def __init__(self):
@@ -83,27 +84,14 @@ class MoveArmState(smach.State):
         self.counter = 0
         self.status = 'failed'
         self.armMover = ArmMover(commandIn)
-        # self.armClient = actionlib.SimpleActionClient('hlpr_manipulation/common_actions/arm_action',
-        #                                                  rail_manipulation_msgs.msg.ArmAction)
-        # self.armClient.wait_for_server()
 
     def execute(self, userdata):
         rospy.loginfo('Executing state MoveArm')
-
-
         self.armMover.executeArmMotion()
         if self.armMover.jointPlanningSuccess:
             self.status = 'succeeded'
-        # armGoal = rail_manipulation_msgs.msg.ArmGoal(action=self.inputCommand)
-        # self.armClient.send_goal(armGoal)
-        # self.armClient.wait_for_result(rospy.Duration.from_sec(30.0))
-        # armResult = self.armClient.get_result()
-        #
-        # if armResult:
-        #     self.status = 'succeeded'
 
         return self.status
-
 
 
 class SearchObjectState(smach.State):
@@ -119,8 +107,6 @@ class SearchObjectState(smach.State):
         rospy.loginfo('Executing state SearchObject')
         self.objectSearcher.requestedObjectName = userdata.objectNameIn
         self.counter += 1
-
-        #self.objectSearcher.getRecognizedObject()
         self.objectSearcher.findObject()
         recognizedObject = self.objectSearcher.recognizedObject
 
@@ -129,6 +115,7 @@ class SearchObjectState(smach.State):
             userdata.objectOut = recognizedObject
 
         return self.status
+
 
 class AdjustBaseState(smach.State):
     def __init__(self):
