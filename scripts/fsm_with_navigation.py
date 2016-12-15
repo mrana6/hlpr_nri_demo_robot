@@ -23,59 +23,47 @@ class ClearSceneState(smach.State):
         smach.State.__init__(self, outcomes=['succeeded', 'failed'])
         self.counter = 0
         self.status = 'failed'
+
+        rospy.loginfo('Waiting for detach objects service')
         rospy.wait_for_service('/hlpr_moveit_wrapper/detach_objects')
-        rospy.wait_for_service('/clear_octomap')
-        rospy.wait_for_service('/rail_segmentation/clear')
         self.detachObjectsService = rospy.ServiceProxy('/hlpr_moveit_wrapper/detach_objects', std_srvs.srv.Empty)
+        rospy.loginfo('Service detach objects is ready')
+
+        rospy.loginfo('Waiting for clear octomap service')
+        rospy.wait_for_service('/clear_octomap')
         self.clearOctomapService = rospy.ServiceProxy('/clear_octomap', std_srvs.srv.Empty)
+        rospy.loginfo('Service clear octomap is ready')
+
+        rospy.loginfo('Waiting for segmentation clear service')
+        rospy.wait_for_service('/rail_segmentation/clear')
         self.clearSegmentedObjectsService = rospy.ServiceProxy('/rail_segmentation/clear', std_srvs.srv.Empty)
+        rospy.loginfo('Service segmentation clear is ready')
 
     def execute(self, userdata):
         self.counter += 1
         rospy.loginfo('Executing state ClearScene')
+        self.status = 'succeeded'
+
         try:
             self.detachObjectsService()
-            rospy.loginfo('Detach Object Service Call Succeeded')
-        except:
-            rospy.loginfo('Detach Object Service Call Failed')
+        except rospy.ServiceException, e:
+            self.status = 'failed'
+            rospy.logerr("Service did not process request: %s", str(e))
 
         try:
             self.clearSegmentedObjectsService()
-            rospy.loginfo('Clear Segmented Objects Service Call Succeeded')
-        except:
-            rospy.loginfo('Clear Segmented Objects Service Call Failed')
+        except rospy.ServiceException, e:
+            self.status = 'failed'
+            rospy.logerr("Service did not process request: %s", str(e))
 
         try:
             self.clearOctomapService()
-            rospy.loginfo('Clear Octomap Service Call Succeeded')
-            self.status = 'succeeded'
-        except:
-            rospy.loginfo('Clear Octomap Service Call Failed')
+        except rospy.ServiceException, e:
+            self.status = 'failed'
+            rospy.logerr("Service did not process request: %s", str(e))
 
         rospy.sleep(2.0)  # To let the octomap regenerate
         return self.status
-    
-
-class ClearOctomapState(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded', 'failed'])
-        self.counter = 0
-        self.status = 'failed'
-        rospy.wait_for_service('/clear_octomap')
-        self.clearOctomapService = rospy.ServiceProxy('/clear_octomap', std_srvs.srv.Empty)
-
-    def execute(self, userdata):
-        self.counter += 1
-        rospy.loginfo('Executing state ClearOctomap')
-        try:
-            self.clearOctomapService()
-            rospy.loginfo('Clear Octomap Service Call Succeeded')
-            self.status = 'succeeded'
-        except:
-            rospy.loginfo('Clear Octomap Service Call Failed')
-
-        return self.status
-
 
 
 class MoveArmState(smach.State):
@@ -304,10 +292,6 @@ class DemonstrateGraspState(smach.State):
 
 if __name__ == '__main__':
     rospy.init_node('hlpr_nri_demo_state_machine')
-    # armMover = ArmMover('Ready')
-    # armMover.executeArmMotion()
-
-
 
     # Create a SMACH state machine
     sm = smach.StateMachine(outcomes=['end'])
@@ -338,8 +322,7 @@ if __name__ == '__main__':
                                             'failed': 'end'},
                                remapping={'navGoalIn': 'navGoalStart'})
 
-
-        smach.StateMachine.add('ClearOctomap', ClearOctomapState(),
+        smach.StateMachine.add('ClearScene2', ClearSceneState(),
                                transitions={'succeeded':'SearchObject',
                                             'failed':'end'})
 
@@ -350,23 +333,6 @@ if __name__ == '__main__':
                                           'objectNameIn': 'objectName',
                                           'objectOut': 'recognizedObject'})
 
-
-        # # # smach.StateMachine.add('ReadyArm', MoveArmState('Ready'),
-        # # #                        transitions={'succeeded': 'AdjustBase',
-        # # #                                     'failed': 'end'})
-        # #
-        # # smach.StateMachine.add('AdjustBase', AdjustBaseState(),
-        # #                        transitions={'succeeded': 'ClearOctomap',
-        # #                                     'failed': 'end'},
-        # #                        remapping={'objectIn':'recognizedObject',
-        # #                                   'distIn':'distBaseToObject',
-        # #                                   'objectOut':'transformedObject'})
-        # #
-        # # smach.StateMachine.add('ClearOctomap', ClearOctomapState(),
-        # #                        transitions={'succeeded':'PickObject',
-        # #                                     'failed':'end'})
-        #
-        #
         smach.StateMachine.add('PickObject', PickObjectState(),
                                transitions={'succeeded': 'VerifyGrasp',
                                             'failed': 'end',
@@ -394,8 +360,6 @@ if __name__ == '__main__':
         smach.StateMachine.add('HandOffArm', MoveArmState('HandOff'),
                                transitions={'succeeded': 'end',
                                             'failed': 'end'})
-
-
 
     # Execute SMACH plan
     outcome = sm.execute()
