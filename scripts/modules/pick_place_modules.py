@@ -18,6 +18,7 @@ from utilities.kinect_pantilt import PanTilt
 
 class ObjectSearcher:
     def __init__(self, requestedObjectNameIn='BANANA_ARTIFICIAL'):
+        print "asif"
         rospy.wait_for_service('/rail_segmentation/segment')
         self.segmentationService = rospy.ServiceProxy('/rail_segmentation/segment', std_srvs.srv.Empty)
         self.recognitionSub = rospy.Subscriber("/object_recognition_listener/recognized_objects",
